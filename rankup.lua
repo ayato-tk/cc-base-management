@@ -192,18 +192,64 @@ for _, req in ipairs(requests) do
         if f.req == req then isFailed = true break end
     end
     if not isFailed then
-        write(string.format("  %-22s %d... ", req.label, req.qty))
-        local exported, err = call("exportItem",
-            { name = req.id, count = req.qty }, OUTPUT)
-        if not exported then
-            print("ERRO (" .. tostring(err) .. ")")
-            table.insert(failed, { req = req, reason = "export: " .. tostring(err) })
-        elseif type(exported) == "number" and exported < req.qty then
-            print(string.format("PARCIAL %d/%d", exported, req.qty))
-            table.insert(failed, { req = req,
-                reason = string.format("so saiu %d/%d", exported, req.qty) })
-        else
-            print("ok")
+        local remaining     = req.qty
+        local stuckLimit    = math.max(60, 30 + math.floor(remaining / 20))
+        local prevStock     = -1
+        local lastStockGrow = os.clock()
+        local lastChestWarn = -math.huge
+        local craftLogged   = false
+
+        print(string.format("  %-22s exportar %d", req.label, req.qty))
+
+        while remaining > 0 do
+            local exported, err = call("exportItem",
+                { name = req.id, count = remaining }, OUTPUT)
+
+            if exported == nil then
+                print(string.format("    ERRO (%s)", tostring(err)))
+                table.insert(failed, { req = req,
+                    reason = "export: " .. tostring(err) })
+                break
+            end
+
+            if exported > 0 then
+                remaining     = remaining - exported
+                lastChestWarn = -math.huge
+                if remaining == 0 then
+                    print(string.format("    -> ok (%d total)", req.qty))
+                    break
+                end
+            end
+
+            local stock = getStock(req.id)
+            if stock > prevStock then lastStockGrow = os.clock() end
+            prevStock = stock
+
+            if stock <= 0 then
+                if not craftLogged then
+                    print(string.format("    faltam %d em estoque, craftando extras...",
+                        remaining))
+                    craftLogged = true
+                end
+                call("craftItem", { name = req.id, count = remaining })
+
+                if (os.clock() - lastStockGrow) > stuckLimit then
+                    print(string.format("    craft extra travou (%ds), abandonando %d",
+                        stuckLimit, remaining))
+                    table.insert(failed, { req = req,
+                        reason = string.format("craft extra travou, faltam %d", remaining) })
+                    break
+                end
+                sleep(3)
+            else
+                local now = os.clock()
+                if (now - lastChestWarn) > 60 then
+                    print(string.format("    bau cheio (faltam %d, estoque %d), aguardando espaco...",
+                        remaining, stock))
+                    lastChestWarn = now
+                end
+                sleep(5)
+            end
         end
     end
 end
