@@ -98,4 +98,28 @@ return {
             { id = "minecraft:emerald",        label = "Esmeralda",               default = 48  },
         },
     },
+
+    ["copper-3"] = {
+        parent = "copper-2",
+        items = {
+            { id = "minecraft:copper_block",   label = "Bloco de Cobre",          default = 320  },
+            { id = "minecraft:iron_block",     label = "Bloco de Ferro",          default = 160  },
+            { id = "minecraft:redstone_block", label = "Bloco de Redstone",       default = 128  },
+            { id = "minecraft:coal_block",     label = "Bloco de Carvao",         default = 192  },
+            { id = "minecraft:lapis_block",    label = "Bloco de Lapis-Lazuli",   default = 96   },
+            { id = "minecraft:quartz_block",   label = "Bloco de Quartzo",        default = 96   },
+            { id = "minecraft:glass",          label = "Bloco de Vidro",          default = 512  },
+            { id = "minecraft:andesite",       label = "Bloco de Andesito",       default = 1024 },
+            { id = "minecraft:granite",        label = "Bloco de Granito",        default = 512  },
+            { id = "create:andesite_alloy",    label = "Create: Liga Andesito",   default = 512  },
+            { id = "create:shaft",             label = "Create: Eixo",            default = 384  },
+            { id = "create:cogwheel",          label = "Create: Engrenagem",      default = 192  },
+            { id = "create:large_cogwheel",    label = "Create: Eng. Grande",     default = 96   },
+            { id = "create:gearbox",           label = "Create: Caixa Eng.",      default = 48   },
+            { id = "create:andesite_casing",   label = "Create: Casing Andesito", default = 48   },
+            { id = "create:mechanical_press",  label = "Create: Prensa Mecanica", default = 2    },
+            { id = "create:basin",             label = "Create: Bacia",           default = 4    },
+            { id = "create:mechanical_mixer",  label = "Create: Mist. Mecanico",  default = 2    },
+        },
+    },
 }
