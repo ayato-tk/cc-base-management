@@ -5,7 +5,9 @@ local display = require("lib.display")
 local M = {}
 
 local function snapshotItems(bridge)
-    local items = util.safeCall(bridge, "listItems")
+    local items = util.safeCall(bridge, "getItems")
+                or util.safeCall(bridge, "listItems")
+                or util.safeCall(bridge, "listItem")
     if not items then return nil end
     local total = 0
     local byId = {}
