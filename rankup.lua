@@ -1,14 +1,65 @@
 local config = require("config")
+local ranks  = require("ranks")
+
+local args         = { ... }
+local DEFAULT_RANK = ranks._default or "stone"
+local rankName     = args[1] or DEFAULT_RANK
+
+local function listRanks()
+    print("Ranks disponiveis:")
+    for name in pairs(ranks) do
+        if name:sub(1, 1) ~= "_" then
+            print("  - " .. name)
+        end
+    end
+end
+
+if not ranks[rankName] or rankName:sub(1, 1) == "_" then
+    print("Rank '" .. rankName .. "' nao existe.")
+    listRanks()
+    return
+end
+
+local function resolveRank(name, seen)
+    seen = seen or {}
+    if seen[name] then error("ciclo em ranks: " .. name) end
+    seen[name] = true
+
+    local rank = ranks[name]
+    if not rank then error("rank '" .. name .. "' nao existe") end
+
+    local items
+    if rank.overwrite or not rank.parent then
+        items = {}
+    else
+        items = resolveRank(rank.parent, seen)
+    end
+
+    for _, item in ipairs(rank.items or {}) do
+        local replaced = false
+        for i, existing in ipairs(items) do
+            if existing.id == item.id then
+                items[i] = item
+                replaced = true
+                break
+            end
+        end
+        if not replaced then
+            table.insert(items, item)
+        end
+    end
+    return items
+end
 
 local me = peripheral.find("me_bridge")
 if not me then error("ME Bridge nao encontrado") end
 
 local OUTPUT  = config.rankupOutput
 local TIMEOUT = config.rankupTimeout or 300
-local ITEMS   = config.rankupItems or {}
+local ITEMS   = resolveRank(rankName)
 
 if not OUTPUT then error("config.rankupOutput nao configurado") end
-if #ITEMS == 0 then error("config.rankupItems vazio") end
+if #ITEMS == 0 then error("rank '" .. rankName .. "' vazio") end
 
 local function call(method, ...)
     local fn = me[method]
@@ -34,7 +85,7 @@ local function isCraftable(id)
     return false
 end
 
-print("== Rankup ==")
+print(string.format("== Rankup: %s (%d itens) ==", rankName, #ITEMS))
 print("enter=default  numero=qtd  0/s=pular")
 print()
 
