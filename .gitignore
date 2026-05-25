@@ -1,0 +1,2 @@
+# NUNCA commitar o arquivo de secrets — contem o PAT
+secrets.lua
