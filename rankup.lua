@@ -101,79 +101,86 @@ end
 
 if #pending > 0 then
     print()
-    print(string.format("== Agendando %d craft(s), reaproveita CPUs ao liberarem ==",
+    print(string.format("== Drenando %d craft(s) (retenta enquanto CPU/material faltar) ==",
         #pending))
 
-    local STUCK_LIMIT  = computeStuckLimit(requests)
-    print(string.format("  (limite sem progresso: %ds, baseado no maior craft)",
-        STUCK_LIMIT))
-    local start        = os.clock()
-    local lastProgress = os.clock()
+    local STUCK_LIMIT = computeStuckLimit(requests)
+    print(string.format("  (sem progresso por %ds = desiste; max %ds total)",
+        STUCK_LIMIT, TIMEOUT))
+
+    local start            = os.clock()
+    local lastProgress     = os.clock()
+    local prevTotalStock   = -1
+    local prevPendingCount = -1
+    local prevTaskCount    = -1
 
     while #pending > 0 and (os.clock() - start) < TIMEOUT do
-        local progressedThisLoop = false
+        local items  = call("getItems") or {}
+        local stocks = {}
+        for _, it in ipairs(items) do
+            stocks[it.name] = it.count or it.amount or 0
+        end
+
         local newPending = {}
+        local totalStock = 0
+        local doneNow    = {}
+        local schedNow   = {}
         for _, req in ipairs(pending) do
-            local ok = call("craftItem", { name = req.id, count = req.need })
-            if ok then
-                print(string.format("  %-22s agendado", req.label))
+            local s = stocks[req.id] or 0
+            totalStock = totalStock + s
+            if s >= req.qty then
                 req.crafting = true
-                progressedThisLoop = true
+                table.insert(doneNow, req.label)
             else
+                req.need = req.qty - s
+                local result = call("craftItem", { name = req.id, count = req.need })
+                if result and not req.crafting then
+                    table.insert(schedNow, req.label)
+                end
+                if result then req.crafting = true end
                 table.insert(newPending, req)
             end
         end
         pending = newPending
 
-        if progressedThisLoop then
-            lastProgress = os.clock()
+        for _, lbl in ipairs(doneNow)  do print("  " .. lbl .. " -> pronto") end
+        for _, lbl in ipairs(schedNow) do print("  " .. lbl .. " -> agendado") end
+
+        local tasks      = call("getCraftingTasks") or {}
+        local taskCount  = #tasks
+        local progressed = (totalStock > prevTotalStock)
+                        or (#pending  < prevPendingCount)
+                        or (taskCount ~= prevTaskCount)
+        if progressed then lastProgress = os.clock() end
+
+        prevTotalStock   = totalStock
+        prevPendingCount = #pending
+        prevTaskCount    = taskCount
+
+        if #pending == 0 then break end
+
+        if (os.clock() - lastProgress) > STUCK_LIMIT then
+            print(string.format("  Sem progresso ha %ds, desistindo de %d item(ns)",
+                STUCK_LIMIT, #pending))
+            for _, req in ipairs(pending) do
+                table.insert(failed, { req = req,
+                    reason = "sem progresso (CPU/materiais)" })
+            end
+            pending = {}
+            break
         end
 
-        if #pending > 0 then
-            if (os.clock() - lastProgress) > STUCK_LIMIT then
-                print(string.format("  Sem progresso ha %ds, desistindo de %d item(ns)",
-                    STUCK_LIMIT, #pending))
-                for _, req in ipairs(pending) do
-                    table.insert(failed, { req = req,
-                        reason = "CPU sempre ocupado ou faltam ingredientes" })
-                end
-                pending = {}
-                break
-            end
-            local tasks = call("getCraftingTasks") or {}
-            print(string.format("  ... %d na fila, %d CPU(s) ocupada(s), esperando",
-                #pending, #tasks))
-            sleep(5)
-        end
+        local elapsed = math.floor(os.clock() - start)
+        print(string.format("  ... %d aguardando, %d task(s) rodando, %ds",
+            #pending, taskCount, elapsed))
+        sleep(5)
     end
 
     if #pending > 0 then
         print("  TIMEOUT geral atingido")
         for _, req in ipairs(pending) do
-            table.insert(failed, { req = req, reason = "timeout antes de agendar" })
+            table.insert(failed, { req = req, reason = "timeout" })
         end
-    end
-end
-
-local anyCrafting = false
-for _, r in ipairs(requests) do if r.crafting then anyCrafting = true break end end
-
-if anyCrafting then
-    print()
-    print("== Aguardando crafts terminarem (timeout " .. TIMEOUT .. "s) ==")
-    local start = os.clock()
-    while os.clock() - start < TIMEOUT do
-        local tasks = call("getCraftingTasks") or {}
-        local elapsed = math.floor(os.clock() - start)
-        if #tasks == 0 then
-            print("  todos os crafts finalizados (" .. elapsed .. "s)")
-            break
-        end
-        print(string.format("  %d tarefa(s) ativa(s), %ds passados", #tasks, elapsed))
-        sleep(3)
-    end
-    if os.clock() - start >= TIMEOUT then
-        print("  TIMEOUT atingido, seguindo mesmo assim")
     end
 end
 
