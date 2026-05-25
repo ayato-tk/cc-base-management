@@ -1,3 +1,9 @@
+local REPO = {
+    owner  = "ayato-tk",
+    repo   = "cc-base-management",
+    branch = "main",
+}
+
 local FILES = {
     "startup.lua",
     "update.lua",
@@ -9,17 +15,10 @@ local FILES = {
     "lib/modules/me_bridge.lua",
 }
 
-if not fs.exists("secrets.lua") then
-    print("ERRO: secrets.lua nao encontrado.")
-    print("Crie o arquivo com 'edit secrets' e use o template do repo.")
-    return
-end
-local secrets = dofile("secrets.lua")
-
 local function rawUrl(path)
     return string.format(
         "https://raw.githubusercontent.com/%s/%s/%s/%s",
-        secrets.owner, secrets.repo, secrets.branch, path
+        REPO.owner, REPO.repo, REPO.branch, path
     )
 end
 
@@ -31,14 +30,8 @@ local function ensureDir(path)
 end
 
 local function download(path)
-    local url = rawUrl(path)
-    local headers = {
-        ["Authorization"] = "token " .. secrets.token,
-        ["User-Agent"]    = "CC-Updater",
-        ["Accept"]        = "application/vnd.github.raw",
-    }
     write("Baixando " .. path .. " ... ")
-    local resp, err = http.get(url, headers)
+    local resp, err = http.get(rawUrl(path))
     if not resp then
         print("FALHOU (" .. tostring(err) .. ")")
         return false
@@ -65,11 +58,10 @@ local function download(path)
 end
 
 print("== Atualizando do GitHub ==")
-print("Repo: " .. secrets.owner .. "/" .. secrets.repo .. " @ " .. secrets.branch)
+print("Repo: " .. REPO.owner .. "/" .. REPO.repo .. " @ " .. REPO.branch)
 print()
 
-local ok = 0
-local fail = 0
+local ok, fail = 0, 0
 for _, path in ipairs(FILES) do
     if download(path) then ok = ok + 1 else fail = fail + 1 end
 end
