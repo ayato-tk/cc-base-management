@@ -3,6 +3,37 @@ return {
 
     stone = {
         items = {
+            { id = "minecraft:stone",         label = "Pedra",              default = 512 },
+            { id = "minecraft:cobblestone",   label = "Pedregulho",         default = 512 },
+            { id = "minecraft:oak_log",       label = "Troncos",            default = 128 },
+            { id = "minecraft:oak_planks",    label = "Tabuas",             default = 256 },
+            { id = "minecraft:coal_block",    label = "Bloco de Carvao",    default = 48  },
+            { id = "minecraft:glass",         label = "Vidro",              default = 128 },
+            { id = "minecraft:iron_ingot",    label = "Ferro (lingote)",    default = 96  },
+            { id = "minecraft:dirt",          label = "Bloco de Terra",     default = 256 },
+            { id = "minecraft:sand",          label = "Bloco de Areia",     default = 256 },
+            { id = "minecraft:gravel",        label = "Bloco de Cascalho",  default = 256 },
+            { id = "minecraft:torch",         label = "Tocha",              default = 256 },
+            { id = "minecraft:chest",         label = "Bau",                default = 24  },
+            { id = "minecraft:furnace",       label = "Forno",              default = 12  },
+            { id = "minecraft:hopper",        label = "Funil",              default = 12  },
+            { id = "minecraft:rail",          label = "Trilho",             default = 128 },
+            { id = "minecraft:white_wool",    label = "Bloco de La",        default = 128 },
+            { id = "minecraft:book",          label = "Livro",              default = 32  },
+            { id = "minecraft:diamond",       label = "Diamante",           default = 8   },
+        },
+    },
+
+    -- ["stone-2"] = {
+    --     parent = "stone",
+    --     items = {
+    --         -- TODO: preencher com as quantidades do tier 2
+    --     },
+    -- },
+
+    ["stone-3"] = {
+        parent = "stone",
+        items = {
             { id = "minecraft:stone",         label = "Pedra",              default = 1536 },
             { id = "minecraft:cobblestone",   label = "Pedregulho",         default = 1536 },
             { id = "minecraft:oak_log",       label = "Troncos",            default = 384  },
@@ -22,18 +53,9 @@ return {
             { id = "minecraft:book",          label = "Livro",              default = 96   },
             { id = "minecraft:diamond",       label = "Diamante",           default = 32   },
         },
-        --   overwrite = true
-        --
-        -- ["stone-2"] = {
-        --     parent = "stone",
-        --     items = {
-        --         { id = "minecraft:diamond", label = "Diamante", default = 64 }, -- override
-        --         { id = "minecraft:gold_ingot", label = "Ouro", default = 128 }, -- novo
-        --     },
-        -- },
     },
 
-    iron = {
+    copper = {
         items = {
             { id = "minecraft:copper_block",   label = "Bloco de Cobre",          default = 128 },
             { id = "minecraft:iron_block",     label = "Bloco de Ferro",          default = 64  },
@@ -51,6 +73,29 @@ return {
             { id = "create:gearbox",           label = "Create: Caixa Eng.",      default = 24  },
             { id = "create:andesite_casing",   label = "Create: Casing Andesito", default = 24  },
             { id = "minecraft:emerald",        label = "Esmeralda",               default = 32  },
+        },
+    },
+
+    ["copper-2"] = {
+        parent = "copper",
+        items = {
+            { id = "minecraft:copper_block",   label = "Bloco de Cobre",          default = 192 },
+            { id = "minecraft:iron_block",     label = "Bloco de Ferro",          default = 96  },
+            { id = "minecraft:redstone_block", label = "Bloco de Redstone",       default = 72  },
+            { id = "minecraft:coal_block",     label = "Bloco de Carvao",         default = 128 },
+            { id = "minecraft:lapis_block",    label = "Bloco de Lapis-Lazuli",   default = 64  },
+            { id = "minecraft:quartz_block",   label = "Bloco de Quartzo",        default = 64  },
+            { id = "minecraft:glass",          label = "Bloco de Vidro",          default = 384 },
+            { id = "minecraft:calcite",        label = "Bloco de Calcita",        default = 384 },
+            { id = "minecraft:andesite",       label = "Bloco de Andesito",       default = 768 },
+            { id = "create:andesite_alloy",    label = "Create: Liga Andesito",   default = 384 },
+            { id = "create:shaft",             label = "Create: Eixo",            default = 256 },
+            { id = "create:cogwheel",          label = "Create: Engrenagem",      default = 128 },
+            { id = "create:large_cogwheel",    label = "Create: Eng. Grande",     default = 64  },
+            { id = "create:gearbox",           label = "Create: Caixa Eng.",      default = 32  },
+            { id = "create:andesite_casing",   label = "Create: Casing Andesito", default = 32  },
+            { id = "create:basin",             label = "Create: Bacia",           default = 2   },
+            { id = "minecraft:emerald",        label = "Esmeralda",               default = 48  },
         },
     },
 }
