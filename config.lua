@@ -20,6 +20,7 @@ return {
     detectorLabels = {
     },
 
-    itemListMode  = "flow",
-    itemListLimit = 10,
+    itemListMode   = "flow",
+    itemListLimit  = 5,
+    itemListWindow = 600,
 }
