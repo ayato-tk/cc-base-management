@@ -80,25 +80,20 @@ function M.new()
 
     local function topItems(d, mode, limit)
         local list = {}
+        for id, count in pairs(d.byId) do
+            table.insert(list, {
+                id = id, count = count,
+                rate = d.netById[id] or 0,
+                name = d.names[id] or id,
+            })
+        end
         if mode == "flow" then
-            for id, rate in pairs(d.netById) do
-                table.insert(list, {
-                    id = id, rate = rate,
-                    count = d.byId[id] or 0,
-                    name = d.names[id] or id,
-                })
-            end
             table.sort(list, function(a, b)
-                return math.abs(a.rate) > math.abs(b.rate)
+                local ra, rb = math.abs(a.rate), math.abs(b.rate)
+                if ra ~= rb then return ra > rb end
+                return a.count > b.count
             end)
         else
-            for id, count in pairs(d.byId) do
-                table.insert(list, {
-                    id = id, count = count,
-                    rate = d.netById[id] or 0,
-                    name = d.names[id] or id,
-                })
-            end
             table.sort(list, function(a, b) return a.count > b.count end)
         end
         local result = {}
@@ -137,19 +132,29 @@ function M.new()
             ctx.y = ctx.y + 1
         end
 
-        local available = ctx.h - ctx.y - 6
+        local reserve = 1
+        if d.fluidTotal then reserve = reserve + 3 end
+        if d.energyUsage then reserve = reserve + 1 end
+        if d.cpus       then reserve = reserve + 1 end
+        local available = ctx.h - ctx.y - reserve - 1
         local limit = math.min(config.itemListLimit or 10, math.max(0, available))
+
         if limit > 0 then
             local mode = config.itemListMode or "flow"
             local top = self._topItems(d, mode, limit)
-            if #top > 0 then
-                local headerText = mode == "flow"
-                    and string.format("Top %d mais ativos:", #top)
-                    or  string.format("Top %d estoques:",   #top)
+            local headerText = mode == "flow"
+                and string.format("Top %d mais ativos:", #top)
+                or  string.format("Top %d estoques:",   #top)
+            ctx.mon.setCursorPos(ctx.x, ctx.y)
+            ctx.mon.setTextColor(config.colors.title)
+            ctx.mon.write(headerText)
+            ctx.y = ctx.y + 1
+            if #top == 0 then
                 ctx.mon.setCursorPos(ctx.x, ctx.y)
-                ctx.mon.setTextColor(config.colors.title)
-                ctx.mon.write(headerText)
+                ctx.mon.setTextColor(config.colors.label)
+                ctx.mon.write("  (sem itens no ME)")
                 ctx.y = ctx.y + 1
+            else
                 for _, it in ipairs(top) do
                     local label = it.name
                     if #label > 18 then label = label:sub(1, 17) .. "." end
