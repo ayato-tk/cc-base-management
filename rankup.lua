@@ -201,6 +201,17 @@ if #pending > 0 then
             stocks[it.name] = it.count or it.amount or 0
         end
 
+        local tasks     = call("getCraftingTasks") or {}
+        local taskCount = #tasks
+        local activeTasks = {}
+        for _, t in ipairs(tasks) do
+            local name = (t.item        and t.item.name)
+                      or (t.output      and t.output.name)
+                      or (t.finalOutput and t.finalOutput.name)
+                      or t.name
+            if name then activeTasks[name] = true end
+        end
+
         local newPending = {}
         local totalStock = 0
         local doneNow    = {}
@@ -210,15 +221,15 @@ if #pending > 0 then
             local target = req.toExport or req.qty
             totalStock = totalStock + s
             if s >= target then
-                req.crafting = true
                 table.insert(doneNow, req.label)
             else
                 req.need = target - s
-                local result = call("craftItem", { name = req.id, count = req.need })
-                if result and not req.crafting then
-                    table.insert(schedNow, req.label)
+                if not activeTasks[req.id] then
+                    local result = call("craftItem", { name = req.id, count = req.need })
+                    if result then
+                        table.insert(schedNow, req.label)
+                    end
                 end
-                if result then req.crafting = true end
                 table.insert(newPending, req)
             end
         end
@@ -227,8 +238,6 @@ if #pending > 0 then
         for _, lbl in ipairs(doneNow)  do print("  " .. lbl .. " -> pronto") end
         for _, lbl in ipairs(schedNow) do print("  " .. lbl .. " -> agendado") end
 
-        local tasks      = call("getCraftingTasks") or {}
-        local taskCount  = #tasks
         local progressed = (totalStock > prevTotalStock)
                         or (#pending  < prevPendingCount)
                         or (taskCount ~= prevTaskCount)
