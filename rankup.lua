@@ -89,6 +89,19 @@ local function isCraftable(id)
     return false
 end
 
+local chestPeri = peripheral.wrap(OUTPUT)
+
+local function getChestStock(id)
+    if not chestPeri then return 0 end
+    local ok, slots = pcall(function() return chestPeri.list() end)
+    if not ok or not slots then return 0 end
+    local total = 0
+    for _, item in pairs(slots) do
+        if item.name == id then total = total + item.count end
+    end
+    return total
+end
+
 print(string.format("== Rankup: %s (%d itens) ==", rankName, #ITEMS))
 print("enter=default  numero=qtd  0/s=pular")
 print()
@@ -127,21 +140,33 @@ local failed  = {}
 local pending = {}
 
 for _, req in ipairs(requests) do
-    local stock = getStock(req.id)
-    if stock >= req.qty then
-        print(string.format("  %-22s %d em estoque (ok)", req.label, stock))
+    local meStock    = getStock(req.id)
+    local chestStock = getChestStock(req.id)
+    local combined   = meStock + chestStock
+
+    req.toExport = math.max(0, req.qty - chestStock)
+
+    if combined >= req.qty then
+        local note = chestStock > 0
+            and string.format("%d ME + %d no bau (ok)", meStock, chestStock)
+            or  string.format("%d em estoque (ok)", meStock)
+        print(string.format("  %-22s %s", req.label, note))
         req.alreadyOk = true
     else
-        local need = req.qty - stock
+        local need = req.qty - combined
         if not isCraftable(req.id) then
-            print(string.format("  %-22s %d/%d  SEM PADRAO",
-                req.label, stock, req.qty))
+            local note = chestStock > 0
+                and string.format("%d ME + %d bau / %d  SEM PADRAO", meStock, chestStock, req.qty)
+                or  string.format("%d/%d  SEM PADRAO", meStock, req.qty)
+            print(string.format("  %-22s %s", req.label, note))
             table.insert(failed, { req = req, reason = "sem padrao de craft" })
         else
             req.need = need
             table.insert(pending, req)
-            print(string.format("  %-22s %d/%d  na fila (craftar %d)",
-                req.label, stock, req.qty, need))
+            local note = chestStock > 0
+                and string.format("%d ME + %d bau / %d  na fila (craftar %d)", meStock, chestStock, req.qty, need)
+                or  string.format("%d/%d  na fila (craftar %d)", meStock, req.qty, need)
+            print(string.format("  %-22s %s", req.label, note))
         end
     end
 end
@@ -181,13 +206,14 @@ if #pending > 0 then
         local doneNow    = {}
         local schedNow   = {}
         for _, req in ipairs(pending) do
-            local s = stocks[req.id] or 0
+            local s      = stocks[req.id] or 0
+            local target = req.toExport or req.qty
             totalStock = totalStock + s
-            if s >= req.qty then
+            if s >= target then
                 req.crafting = true
                 table.insert(doneNow, req.label)
             else
-                req.need = req.qty - s
+                req.need = target - s
                 local result = call("craftItem", { name = req.id, count = req.need })
                 if result and not req.crafting then
                     table.insert(schedNow, req.label)
@@ -247,14 +273,20 @@ for _, req in ipairs(requests) do
         if f.req == req then isFailed = true break end
     end
     if not isFailed then
-        local remaining     = req.qty
+        local chestNow  = getChestStock(req.id)
+        local remaining = math.max(0, req.qty - chestNow)
+
+        if remaining == 0 then
+            print(string.format("  %-22s já no bau (%d/%d)", req.label, chestNow, req.qty))
+        else
+
         local stuckLimit    = math.max(60, 30 + math.floor(remaining / 20))
         local prevStock     = -1
         local lastStockGrow = os.clock()
         local lastChestWarn = -math.huge
         local craftLogged   = false
 
-        print(string.format("  %-22s exportar %d", req.label, req.qty))
+        print(string.format("  %-22s exportar %d (bau já possui %d)", req.label, remaining, chestNow))
 
         while remaining > 0 do
             local exported, err = call("exportItem",
@@ -306,6 +338,7 @@ for _, req in ipairs(requests) do
                 sleep(5)
             end
         end
+        end -- else remaining > 0
     end
 end
 
