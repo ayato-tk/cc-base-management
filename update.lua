@@ -4,16 +4,20 @@ local REPO = {
     branch = "main",
 }
 
-local EXCLUDE = {
+local ok, cfg = pcall(require, "update_config")
+if not ok then cfg = {} end
+
+local EXCLUDE = cfg.exclude or {
     "^%.gitignore$",
     "^secrets",
     "^README",
-    ".vscode/"
+    "^%.vscode/",
 }
 
-local PROTECTED = {
+local PROTECTED = cfg.protected or {
     "config.lua",
     "ranks.lua",
+    "update_config.lua",
 }
 
 local args     = { ... }
@@ -115,20 +119,20 @@ print()
 local files = listRepoFiles()
 if not files then return end
 
-local ok, fail, skipped = 0, 0, 0
+local nok, fail, skipped = 0, 0, 0
 for _, path in ipairs(files) do
     if not forceAll and isProtected(path) and fs.exists(path) then
         print("  " .. path .. " -> protegido, pulando")
         skipped = skipped + 1
     elseif download(path) then
-        ok = ok + 1
+        nok = nok + 1
     else
         fail = fail + 1
     end
 end
 
 print()
-local summary = string.format("Concluido: %d ok, %d falhas", ok, fail)
+local summary = string.format("Concluido: %d ok, %d falhas", nok, fail)
 if skipped > 0 then
     summary = summary .. string.format(", %d protegido(s) (use -a para sobrescrever)", skipped)
 end
