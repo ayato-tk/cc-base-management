@@ -39,12 +39,16 @@ local function resolveRank(name, seen)
         local replaced = false
         for i, existing in ipairs(items) do
             if existing.id == item.id then
-                items[i] = item
+                if item.remove then
+                    table.remove(items, i)
+                else
+                    items[i] = item
+                end
                 replaced = true
                 break
             end
         end
-        if not replaced then
+        if not replaced and not item.remove then
             table.insert(items, item)
         end
     end
