@@ -11,9 +11,27 @@ local EXCLUDE = {
     ".vscode/"
 }
 
+local PROTECTED = {
+    "config.lua",
+    "ranks.lua",
+}
+
+local args     = { ... }
+local forceAll = false
+for _, a in ipairs(args) do
+    if a == "-a" then forceAll = true end
+end
+
 local function isExcluded(path)
     for _, pat in ipairs(EXCLUDE) do
         if string.match(path, pat) then return true end
+    end
+    return false
+end
+
+local function isProtected(path)
+    for _, p in ipairs(PROTECTED) do
+        if path == p then return true end
     end
     return false
 end
@@ -87,18 +105,34 @@ end
 
 print("== Atualizando do GitHub ==")
 print("Repo: " .. REPO.owner .. "/" .. REPO.repo .. " @ " .. REPO.branch)
+if forceAll then
+    print("Modo: completo (-a)")
+else
+    print("Modo: seguro (arquivos protegidos nao serao sobrescritos)")
+end
 print()
 
 local files = listRepoFiles()
 if not files then return end
 
-local ok, fail = 0, 0
+local ok, fail, skipped = 0, 0, 0
 for _, path in ipairs(files) do
-    if download(path) then ok = ok + 1 else fail = fail + 1 end
+    if not forceAll and isProtected(path) and fs.exists(path) then
+        print("  " .. path .. " -> protegido, pulando")
+        skipped = skipped + 1
+    elseif download(path) then
+        ok = ok + 1
+    else
+        fail = fail + 1
+    end
 end
 
 print()
-print(string.format("Concluido: %d ok, %d falhas", ok, fail))
+local summary = string.format("Concluido: %d ok, %d falhas", ok, fail)
+if skipped > 0 then
+    summary = summary .. string.format(", %d protegido(s) (use -a para sobrescrever)", skipped)
+end
+print(summary)
 if fail == 0 then
     print("Use 'reboot' pra rodar o startup atualizado.")
 end
